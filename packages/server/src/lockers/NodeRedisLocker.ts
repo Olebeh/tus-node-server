@@ -1,4 +1,4 @@
-import type {RedisClientType} from '@redis/client'
+import type {RedisClientType, RedisClusterType} from '@redis/client'
 import type {PubSubListener} from '@redis/client/dist/lib/client/pub-sub.js'
 import type {Locker} from '@tus/utils'
 import {
@@ -8,14 +8,16 @@ import {
   RedisLockEngine,
 } from './RedisLockEngine.js'
 
+type NodeRedisClientType = RedisClientType | RedisClusterType
+
 /**
  * NodeRedisLocker is a distributed Locker backed by the node-redis client
  * It is a thin wrapper that adapts node-redis to the shared {@link RedisLockEngine} where the actual lock state machine lives
  *
  * @author Oleg Mykula <oleg.mukula@gmail.com>
  *
- * @param {RedisClientType} redis used for Redis I/O operations like storing lock data and publishing unlock requests
- * @param {RedisClientType} subscriber used exclusively for Redis subscription capabilities to receive unlock requests
+ * @param {NodeRedisClientType} redis used for Redis I/O operations like storing lock data and publishing unlock requests
+ * @param {NodeRedisClientType} subscriber used exclusively for Redis subscription capabilities to receive unlock requests
  * @param {number} [acquireLockTimeout] determines max wait time for a busy lock to unlock - it is recommended to keep this number greater than or equal to `redisLockTimeout` (default=30000ms)
  * @param {number} [acquireLockRetry] in order not to bombard Redis with constant requests to acquire the lock, a retry delay is used. Still it is recommended to keep the number low (default=100ms)
  * @param {number} [redisLockTimeout] the TTL of the lock on Redis (default=30000)
@@ -23,8 +25,8 @@ import {
  * @param {string} [subPrefix] prefix for Sub/Pub (default="lock:release")
  */
 export interface RedisLockerOptions {
-  redis: RedisClientType
-  subscriber: RedisClientType
+  redis: NodeRedisClientType
+  subscriber: NodeRedisClientType
   acquireLockTimeout?: number
   acquireLockRetry?: number
   redisLockTimeout?: number
@@ -38,8 +40,8 @@ export interface RedisLockerOptions {
  */
 class NodeRedisClient implements LockClient {
   constructor(
-    private redis: RedisClientType,
-    private subscriber: RedisClientType
+    private redis: NodeRedisClientType,
+    private subscriber: NodeRedisClientType
   ) {}
 
   async tryAcquire(key: string, token: string, ttlMs: number): Promise<boolean> {
